@@ -1,70 +1,48 @@
-import { SpaceObject, Asteroid, Planet, Ship, Vector, CrewMember, Rank } from './types';
+import joi from 'joi';
 
-function hasKey<K extends string>(x: unknown, y: K): x is { [key in K]: any } {
-  return typeof x === 'object' && x !== null && y in x;
-}
+import { SpaceObject } from './types';
 
-function isVector(x: unknown): x is Vector {
-  return Array.isArray(x) && x.length === 3 && x.every(y => typeof y === 'number');
-}
+const vectorSchema = joi
+  .array()
+  .ordered(joi.number().required(), joi.number().required(), joi.number().required())
+  .required();
 
-function isBaseSpaceObject(
-  x: unknown,
-): x is Pick<SpaceObject, 'type' | 'location' | 'mass' | 'name'> {
-  return (
-    hasKey(x, 'location') &&
-    isVector(x.location) &&
-    hasKey(x, 'mass') &&
-    typeof x.mass === 'number' &&
-    hasKey(x, 'name') &&
-    typeof x.name === 'string'
-  );
-}
+const baseSpaceObjectSchema = joi
+  .object()
+  .keys({
+    location: vectorSchema,
+    mass: joi.number().required(),
+    name: joi.string().required(),
+  })
+  .required();
 
-function isAsteroid(x: unknown): x is Asteroid {
-  return isBaseSpaceObject(x) && hasKey(x, 'type') && x.type === 'asteroid';
-}
+const asteroidSchema = baseSpaceObjectSchema.keys({ type: joi.string().valid('asteroid').required() });
 
-function isPlanet(x: unknown): x is Planet {
-  return (
-    isBaseSpaceObject(x) &&
-    hasKey(x, 'type') &&
-    x.type === 'planet' &&
-    hasKey(x, 'population') &&
-    typeof x.population === 'number' &&
-    hasKey(x, 'habitable') &&
-    typeof x.habitable === 'boolean'
-  );
-}
+const planetSchema = baseSpaceObjectSchema.keys({
+  type: joi.string().valid('planet').required(),
+  population: joi.number().required(),
+  habitable: joi.boolean().required(),
+});
 
-function isRank(x: unknown): x is Rank {
-  return typeof x === 'string' && ['captain', 'first mate', 'officer', 'ensign'].includes(x);
-}
+const rankSchema = joi.string().valid('captain', 'first mate', 'officer', 'ensign').required();
 
-function isCrewMember(x: unknown): x is CrewMember {
-  return (
-    hasKey(x, 'name') &&
-    typeof x.name === 'string' &&
-    hasKey(x, 'age') &&
-    typeof x.age === 'number' &&
-    hasKey(x, 'rank') &&
-    isRank(x.rank) &&
-    hasKey(x, 'home') &&
-    isPlanet(x.home)
-  );
-}
+const crewMemberSchema = joi
+  .object()
+  .keys({
+    name: joi.string().required(),
+    age: joi.number().required(),
+    rank: rankSchema,
+    home: planetSchema,
+  })
+  .required();
 
-function isShip(x: unknown): x is Ship {
-  return (
-    isBaseSpaceObject(x) &&
-    hasKey(x, 'type') &&
-    x.type === 'ship' &&
-    hasKey(x, 'crew') &&
-    Array.isArray(x.crew) &&
-    x.crew.every(isCrewMember)
-  );
-}
+const shipSchema = baseSpaceObjectSchema.keys({
+  type: joi.string().valid('ship').required(),
+  crew: joi.array().items(crewMemberSchema).required(),
+});
+
+const spaceObjectSchema = joi.alternatives().try(asteroidSchema, planetSchema, shipSchema).required();
 
 export function isSpaceObject(x: unknown): x is SpaceObject {
-  return isAsteroid(x) || isPlanet(x) || isShip(x);
+  return !spaceObjectSchema.validate(x).error;
 }
