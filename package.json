@@ -29,6 +29,6 @@
   },
   "dependencies": {
     "express": "^4.17.2",
-    "joi": "^17.5.0"
+    "runtypes": "^6.5.0"
   }
 }

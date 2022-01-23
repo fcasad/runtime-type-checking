@@ -1,48 +1,55 @@
-import joi from 'joi';
+import * as rt from 'runtypes';
 
 import { SpaceObject } from './types';
 
-const vectorSchema = joi
-  .array()
-  .ordered(joi.number().required(), joi.number().required(), joi.number().required())
-  .required();
+const VectorRunType = rt.Tuple(rt.Number, rt.Number, rt.Number);
 
-const baseSpaceObjectSchema = joi
-  .object()
-  .keys({
-    location: vectorSchema,
-    mass: joi.number().required(),
-    name: joi.string().required(),
-  })
-  .required();
-
-const asteroidSchema = baseSpaceObjectSchema.keys({ type: joi.string().valid('asteroid').required() });
-
-const planetSchema = baseSpaceObjectSchema.keys({
-  type: joi.string().valid('planet').required(),
-  population: joi.number().required(),
-  habitable: joi.boolean().required(),
+const BaseSpaceObjectRunType = rt.Record({
+  location: VectorRunType,
+  mass: rt.Number,
+  name: rt.String,
 });
 
-const rankSchema = joi.string().valid('captain', 'first mate', 'officer', 'ensign').required();
+const AsteroidRunType = rt.Intersect(
+  rt.Record({
+    type: rt.Literal('asteroid'),
+  }),
+  BaseSpaceObjectRunType,
+);
 
-const crewMemberSchema = joi
-  .object()
-  .keys({
-    name: joi.string().required(),
-    age: joi.number().required(),
-    rank: rankSchema,
-    home: planetSchema,
-  })
-  .required();
+const PlanetRunType = rt.Intersect(
+  rt.Record({
+    type: rt.Literal('planet'),
+    population: rt.Number,
+    habitable: rt.Boolean,
+  }),
+  BaseSpaceObjectRunType,
+);
 
-const shipSchema = baseSpaceObjectSchema.keys({
-  type: joi.string().valid('ship').required(),
-  crew: joi.array().items(crewMemberSchema).required(),
+const RankRunType = rt.Union(
+  rt.Literal('captain'),
+  rt.Literal('first mate'),
+  rt.Literal('officer'),
+  rt.Literal('ensign'),
+);
+
+const CrewMemberRunType = rt.Record({
+  name: rt.String,
+  age: rt.Number,
+  rank: RankRunType,
+  home: PlanetRunType,
 });
 
-const spaceObjectSchema = joi.alternatives().try(asteroidSchema, planetSchema, shipSchema).required();
+const ShipRunType = rt.Intersect(
+  rt.Record({
+    type: rt.Literal('ship'),
+    crew: rt.Array(CrewMemberRunType),
+  }),
+  BaseSpaceObjectRunType,
+);
+
+const SpaceObjectRunType = rt.Union(AsteroidRunType, PlanetRunType, ShipRunType);
 
 export function isSpaceObject(x: unknown): x is SpaceObject {
-  return !spaceObjectSchema.validate(x).error;
+  return SpaceObjectRunType.guard(x);
 }
