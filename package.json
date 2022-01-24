@@ -5,10 +5,11 @@
   "main": "src/main.ts",
   "scripts": {
     "format": "prettier --write .",
-    "clean": "rimraf ./dist",
-    "build": "tsc",
+    "clean": "rimraf dist",
+    "build-schemas": "ts-json-schema-generator --path src/types.ts --type '*' --out src/schema.json --additional-properties false",
+    "build": "npm run build-schemas && npm run format && npm run clean && tsc && cpx src/schema.json dist",
     "test": "jest",
-    "start": "node ./dist/main.js"
+    "start": "node dist/main.js"
   },
   "keywords": [],
   "author": "",
@@ -19,12 +20,14 @@
     "@types/lodash": "^4.14.178",
     "@types/node": "^17.0.10",
     "@types/supertest": "^2.0.11",
+    "cpx": "^1.5.0",
     "jest": "^27.4.7",
     "lodash": "^4.17.21",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "supertest": "^6.2.2",
     "ts-jest": "^27.1.3",
+    "ts-json-schema-generator": "^0.97.0",
     "typescript": "^4.5.5"
   },
   "dependencies": {
