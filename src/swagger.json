@@ -1,0 +1,41 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Space Objects API",
+    "description": "Demo to compare different runtime type checking methods",
+    "version": "1.0.0"
+  },
+  "servers": [{ "url": "/v1" }],
+  "paths": {
+    "/space-objects": {
+      "post": {
+        "operationId": "createSpaceObject",
+        "summary": "Create space object",
+        "requestBody": {
+          "description": "Space object to be created",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SpaceObject" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ok",
+            "content": {
+              "application/json": { "schema": { "type": "string", "nullable": true } }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": { "schema": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": { "schemas": {} }
+}
